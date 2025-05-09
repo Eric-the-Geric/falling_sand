@@ -14,12 +14,12 @@ class Particle:
         self.converts_to = None
         self.v = 1
         self.lifetime = -1
+        self.health = 5
 
     def update(self, grid, y, x, dt):
         pass
     def convert(self):
         pass
-
 class Liquid(Particle):
     def __init__(self, spread=2, prob=0.7, name="air", color=None, density=-100, state=0):
         super().__init__(name=name, color=color, density=density, state=state)
@@ -361,3 +361,117 @@ class Sand(Particle):
 
             else:
                 self.v = 1
+
+class Acid(Particle):
+    def __init__(self, spread=3, prob=0.9, name="acid", color=None, density=4, state=10):
+        super().__init__(name=name, color=(random.randint(0, 4), random.randint(240, 255), random.randint(0, 10)), density=density, state=state)
+        self.v = 1
+        self.spread = spread
+        self.prob = prob
+
+    def update(self, grid, y, x, dt):
+        if not self.processed:
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    if i==0 and j==0:
+                        continue
+                    if grid.within_cols(x+j) and grid.within_rows(y+i):
+                        particle = grid.board[y+j][x+i]
+                        if particle.name == 'acid':
+                            continue
+                        #elif random.random() < 0.01:
+                        else:
+                            particle.health -= dt
+            self.v += G*dt
+            dir = np.random.choice([-1, 1])
+            below = grid.board[y+1][x]
+            sA = grid.board[y][x+dir]
+            sB = grid.board[y][x-dir]
+            belowA = grid.board[y+1][x+dir]
+            belowB = grid.board[y+1][x-dir]
+            d = int(self.v)
+            s = int(self.spread)
+            if below.state == self.state:
+                grid.swap(y, x, y+1, x)
+            if belowA.state == self.state:
+                grid.swap(y, x, y+1, x+dir)
+            if belowB.state == self.state:
+                grid.swap(y, x, y+1, x-dir)
+
+            if below.density < self.density:
+                while d <= self.v:
+                    if grid.within_cols(x) and grid.within_rows(y+d):
+                        below = grid.board[y+d][x]
+                        if below.density < self.density:
+                            grid.swap(y+d, x, y, x)
+                            below.processed = True
+                            self.processed = True
+                            d +=1
+                        else:
+                            d+=1
+                    else:
+                        self.v = 1
+                        break
+
+
+            if belowA.density < self.density:
+                while d >=1:
+                    if grid.within_cols(x+dir*d) and grid.within_rows(y+d):
+                        belowA = grid.board[y+d][x+dir*d]
+                        if belowA.density < self.density:
+                            grid.swap(y+d, x+dir*d, y, x)
+                            belowA.processed = True
+                            self.processed = True
+                            d-=1
+                        else:
+                            d-=1
+                    else:
+                        self.v = 1
+                        break
+
+            if belowB.density < self.density:
+                while d >=1:
+                    if grid.within_cols(x-dir*d) and grid.within_rows(y+d):
+                        belowB = grid.board[y+d][x-dir*d]
+                        if belowB.density < self.density:
+                            grid.swap(y+d, x-dir*d, y, x)
+                            belowA.processed = True
+                            self.processed = True
+                            d -=1
+                        else:
+                            d -=1
+                    else:
+                        self.v = 1
+                        break
+
+            elif sA.density < self.density and random.random() < self.prob:
+                while s >=1:
+                    if grid.within_cols(x+dir*s) and grid.within_rows(y):
+                        sA = grid.board[y][x+dir*s]
+                        if sA.density < self.density:
+                            grid.swap(y, x+dir*s, y, x)
+                            sA.processed = True
+                            self.processed = True
+                            s-=1
+                        else:
+                            s-=1
+                    else:
+                        break
+
+
+            elif sB.density < self.density and random.random() < self.prob:
+                while s >=1:
+                    if grid.within_cols(x-dir*s) and grid.within_rows(y):
+                        sB = grid.board[y][x-dir*s]
+                        if sB.density < self.density:
+                            grid.swap(y, x-dir*s, y, x)
+                            sB.processed = True
+                            self.processed = True
+                            s-=1
+                        else:
+                            s-=1
+                    else:
+                        break
+            else:
+                self.v = 1
+                self.processed = True

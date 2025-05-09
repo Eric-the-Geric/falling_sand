@@ -9,6 +9,8 @@ from src.particles import (
         Smoke,
         Sand,
         Wood,
+        Acid,
+        Particle
         )
 from src.settings import *
 from src.utils import make_matrix
@@ -43,6 +45,8 @@ def main():
             sand = 5
         if keys[pygame.K_7]:
             sand = 6
+        if keys[pygame.K_8]:
+            sand = 7
         if keys[pygame.K_r]:
             grid.reset()
         if keys[pygame.K_SPACE]:
@@ -70,6 +74,8 @@ def main():
             elif sand == 6:
                 make_matrix(5, y, x, grid, Concrete)
 
+            elif sand == 7:
+                make_matrix(5, y, x, grid, Acid)
         if pygame.mouse.get_pressed()[2]:
             mx, my = pygame.mouse.get_pos()
             x, y = mx//SCALE, my//SCALE

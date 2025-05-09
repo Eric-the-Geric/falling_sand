@@ -31,6 +31,9 @@ class Grid:
                         particle = self.board[y][x]
                         if particle.state != 0:
                             particle = self.board[y][x]
+                            print(particle.health)
+                            if particle.health < 1:
+                                self.board[y][x] = Particle()
                             particle.update(self, y, x, dt)
         else:
             for y in range(0, self.h):
