@@ -29,6 +29,20 @@ have fun :)
 
 currently only has 9 or so materials but added more frequently
 
+```
+materials:
+    Water,
+    Fire,
+    Acid,
+    Stone,
+    Wood,
+    Steam,
+    Smoke,
+    Sand,
+    Concrete,
+    Lava,
+```
+
 Also thinking of converting this to c++ and using SDL2 for better performance. But i don't know c++ so might take some time :)
 
 If you have any questions / suggestions feel free to open an issue or a pull request. This is very much a casual project and right now just quick and dirty. So will clean it soon too
