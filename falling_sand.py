@@ -5,9 +5,9 @@ import random
 
 # some constants
 FPS = 60
-W, H = 1400, 1000
-SCALE = 10
-G = 2
+W, H = 800, 500
+SCALE = 3
+G = 18
 
 class Particle:
     def __init__(self, name="air", color=None, density=-100, state=0):
@@ -27,11 +27,12 @@ class Particle:
         pass
 
 class Liquid(Particle):
-    def __init__(self, spread=2, name="air", color=None, density=-100, state=0):
+    def __init__(self, spread=2, prob=0.7, name="air", color=None, density=-100, state=0):
         super().__init__(name=name, color=color, density=density, state=state)
         self.v = 1
         self.spread = spread
         self.hot = False
+        self.prob = prob
 
     def update(self, grid, y, x, dt):
         if not self.processed:
@@ -43,11 +44,21 @@ class Liquid(Particle):
                         if grid.within_cols(x+j) and grid.within_rows(y+i):
                             particle = grid.board[y+i][x+j]
                             if particle.flammable:
-                                if random.random() < 0.01:
+                                if random.random() < 0.005:
                                     grid.board[y+i][x+j] = Fire()
                                     grid.board[y+i][x+j].processed = True
                                     self.processed = True
                                     break
+            if not self.hot:
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
+                        if i==0 and j==0:
+                            continue
+                        if grid.within_cols(x+j) and grid.within_rows(y+i):
+                            particle = grid.board[y+i][x+j]
+                            if particle.name == 'fire':
+                                if random.random() < 0.5:
+                                    particle.put_out(grid, y+i, x+j)
             self.v += G*dt
             dir = np.random.choice([-1, 1])
             below = grid.board[y+1][x]
@@ -57,6 +68,12 @@ class Liquid(Particle):
             belowB = grid.board[y+1][x-dir]
             d = int(self.v)
             s = int(self.spread)
+            if below.state == self.state:
+                grid.swap(y, x, y+1, x)
+            if belowA.state == self.state:
+                grid.swap(y, x, y+1, x+dir)
+            if belowB.state == self.state:
+                grid.swap(y, x, y+1, x-dir)
 
             if below.density < self.density:
                 while d <= self.v:
@@ -104,7 +121,7 @@ class Liquid(Particle):
                         self.v = 1
                         break
 
-            elif sA.density < self.density:
+            elif sA.density < self.density and random.random() < self.prob:
                 while s >=1:
                     if grid.within_cols(x+dir*s) and grid.within_rows(y):
                         sA = grid.board[y][x+dir*s]
@@ -119,7 +136,7 @@ class Liquid(Particle):
                         break
 
 
-            elif sB.density < self.density:
+            elif sB.density < self.density and random.random() < self.prob:
                 while s >=1:
                     if grid.within_cols(x-dir*s) and grid.within_rows(y):
                         sB = grid.board[y][x-dir*s]
@@ -137,14 +154,17 @@ class Liquid(Particle):
                 self.processed = True
 
 class Fire(Particle):
-    def __init__(self, name='fire', color='red', density=30, state=5):
-        super().__init__(name='fire', color='red', density=0, state=6)
-        self.lifetime = 10
+    def __init__(self, name='fire', color='red', density=30, state=5, previous=None):
+        super().__init__(name='fire', color=(random.randint(230, 255), random.randint(140, 170), random.randint(0, 5)), density=0, state=6)
+        self.lifetime = 3
+        self.previous = previous
 
 
     def update(self, grid, y, x, dt):
+        print(self.lifetime)
         if not self.processed:
-            if self.lifetime <= 0:
+            self.color = color=(random.randint(230, 255), random.randint(140, 170), random.randint(0, 5))
+            if self.lifetime <= 1 and self.lifetime > -1:
                 grid.board[y][x] = Smoke()
                 grid.board[y][x].processed = True
                 self.processed = True
@@ -156,19 +176,27 @@ class Fire(Particle):
                         particle = grid.board[y+i][x+j]
                         if particle.flammable:
                             if random.random() < 0.01:
-                                grid.board[y+i][x+j] = Fire()
+                                grid.board[y+i][x+j] = Fire(previous=particle)
                                 grid.board[y+i][x+j].processed = True
                                 self.processed = True
                                 break
             if self.lifetime > 0:
                 self.lifetime -= dt
+
+    def put_out(self, grid, y, x):
+        if self.previous:
+            grid.board[y][x] = self.previous
+            grid.board[y][x].processed = True
+        else:
+            grid.board[y][x] = Particle()
+            grid.board[y][x].processed = True
                         
                     
 
 
 class Wood(Particle):
     def __init__(self, name='wood', color='brown', density=30, state=4):
-        super().__init__(name='wood', color='brown', density=30, state=4)
+        super().__init__(name='wood', color=(random.randint(190, 196), random.randint(150, 170), random.randint(125, 135)), density=30, state=4)
         self.flammable = True
 
     def update(self, grid, y, x, dt):
@@ -176,10 +204,17 @@ class Wood(Particle):
 
 class Smoke(Particle):
     def __init__(self, name='smoke', color='white', density=-1, state=3):
-        super().__init__(name='smoke', color='white', density=-1, state=3)
+        super().__init__(name='smoke', color=color, density=-1, state=3)
+        self.col = random.randint(230, 255)
+        self.color = (self.col, self.col, self.col)
+        self.lifetime = 5
 
     def update(self, grid, y, x, dt):
         if not self.processed:
+            if self.lifetime <= 1 and self.lifetime > -1:
+                grid.board[y][x] = Particle()
+                grid.board[y][x].processed = True
+                self.processed = True
             dir = np.random.choice([-1, 1])
             below = grid.board[y-1][x]
             sA = grid.board[y][x+dir]
@@ -201,28 +236,33 @@ class Smoke(Particle):
                 below.processed = True
                 grid.board[y][x], grid.board[y-1][x-dir] = grid.board[y-1][x-dir], grid.board[y][x]
 
-            elif sA and sA.density < self.density and random.random() < 0.4:
+            elif sA and sA.density < self.density and random.random() < 0.6:
                 self.processed = True
                 below.processed = True
                 grid.board[y][x], grid.board[y][x+dir] = grid.board[y][x+dir], grid.board[y][x]
 
-            elif sB and sB.density < self.density and random.random() < 0.4:
+            elif sB and sB.density < self.density and random.random() < 0.6:
                 self.processed = True
                 below.processed = True
                 grid.board[y][x], grid.board[y][x-dir] = grid.board[y][x-dir], grid.board[y][x]
 
+        if self.lifetime > 0:
+            self.lifetime -= dt
+
 class Water(Liquid):
     def __init__(self, name='water', color='blue', density=3, state=2):
-        super().__init__(spread=4, name='water', color='blue', density=3, state=2)
+        super().__init__(spread=4, name='water', color=(random.randint(0, 70), random.randint(0, 10), random.randint(200, 255)), density=3, state=2)
 
 class Lava(Liquid):
     def __init__(self, name='lava',  color='red', density=5, state=5):
-        super().__init__(spread=1, name='lava', color='red', density=5, state=5)
+        super().__init__(prob=0.5, spread=1, name='lava', color=(random.randint(210, 255), random.randint(0, 10), random.randint(0, 75)), density=5, state=5)
         self.hot = True
 
 class Sand(Particle):
     def __init__(self, name="sand", color="yellow", density=10, state=1):
         super().__init__(name=name, color=color, density=density, state=state)
+        self.yellow = random.randint(200, 255)
+        self.color = (self.yellow, self.yellow, 0)
 
     def update(self, grid, y, x, dt):
         if not self.processed:
@@ -332,7 +372,7 @@ class Grid:
         for y, row in enumerate(self.board):
             for x, particle in enumerate(row):
                 if particle.state != 0:
-                    pygame.draw.rect(screen, particle.color, pygame.rect.Rect([x*SCALE-1, y*SCALE-1, SCALE, SCALE]))
+                    pygame.draw.rect(screen, particle.color, pygame.rect.Rect([x*SCALE, y*SCALE, SCALE, SCALE]))
 
 
 def make_matrix(width, y, x, grid, particle):
@@ -410,12 +450,9 @@ def main():
         pygame.display.flip()
 
         clock.tick(FPS)  # limits FPS to 60
-        dt = clock.tick(60) / 100
+        dt = clock.tick(FPS) / 1001
 
     pygame.quit()
-
-
-
 
 
 if __name__ == "__main__":
