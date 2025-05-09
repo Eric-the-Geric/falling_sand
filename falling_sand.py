@@ -5,9 +5,9 @@ import random
 
 # some constants
 FPS = 60
-W, H = 1000, 500
-SCALE = 6
-G = 18
+W, H = 1200, 800
+SCALE = 5
+G = 9.8
 
 class Particle:
     def __init__(self, name="air", color=None, density=-100, state=0):
