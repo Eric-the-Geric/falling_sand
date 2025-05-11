@@ -28,6 +28,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_SPACE:
+                    pause = not pause
         keys = pygame.key.get_pressed()
         if keys[pygame.K_RETURN]:
             pygame.quit()
@@ -49,8 +52,8 @@ def main():
             sand = 7
         if keys[pygame.K_r]:
             grid.reset()
-        if keys[pygame.K_SPACE]:
-            pause = not pause
+       # if keys[pygame.K_SPACE]:
+       #     pause = not pause
 
 
         if pygame.mouse.get_pressed()[0]:
