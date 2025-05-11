@@ -381,7 +381,7 @@ class Acid(Particle):
                             continue
                         #elif random.random() < 0.01:
                         else:
-                            particle.health -= dt
+                            particle.health -= 5*dt
             self.v += G*dt
             dir = np.random.choice([-1, 1])
             below = grid.board[y+1][x]
