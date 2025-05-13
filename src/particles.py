@@ -1,4 +1,3 @@
-import pygame
 import numpy as np
 import random
 from src.settings import *

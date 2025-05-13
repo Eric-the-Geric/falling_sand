@@ -94,7 +94,7 @@ def main():
         pygame.display.flip()
 
         clock.tick(FPS)  # limits FPS to 60
-        dt = clock.tick(FPS) / 1001
+        dt = clock.tick(FPS) / 1000
 
     pygame.quit()
 

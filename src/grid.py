@@ -33,7 +33,8 @@ class Grid:
                             particle = self.board[y][x]
                             if particle.health < 1:
                                 self.board[y][x] = Particle()
-                            particle.update(self, y, x, dt)
+                            for i in range(int(particle.v)):
+                                particle.update(self, y, x, dt)
         else:
             for y in range(0, self.h):
                 for x in range(0, self.w):
